@@ -62,6 +62,7 @@ xcuserdata/
 observe-swift/
 observe-dart/
 observe-js/
+observe-contract/
 
 # --- AI tooling (reproducible via the skills CLI; not part of the project) ---
 .agents/
