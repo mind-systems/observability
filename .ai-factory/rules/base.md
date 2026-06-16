@@ -1,6 +1,6 @@
 # Project Base Rules
 
-> Greenfield project — no application code yet. These are the agreed conventions for the multi-platform SDK monorepo, to be refined as code lands.
+> Greenfield project — no application code yet. These are the agreed conventions for the multi-platform SDK polyrepo (a root coordination repo with each platform SDK as its own git repository), to be refined as code lands.
 
 ## Naming Conventions
 
@@ -10,7 +10,7 @@
 
 ## Module Structure
 
-- Monorepo with one top-level directory per SDK platform plus the native Grafana + Loki run configuration and any query/MCP wrapper.
+- Polyrepo: a root coordination repo holding the native Grafana + Loki run configuration (`backend/`) and the query/MCP wrapper (`tools/`), with each platform SDK as its own git repository (`observe-swift`, `observe-dart`, `observe-js`) cloned inside the root.
 - Keep the OTLP exporter, the public API, and the ambient-context plumbing as separate units within each SDK.
 - Backend (Grafana family) is off-the-shelf and runs natively (no Docker) — no engine code lives here, only run config (Loki config, Grafana provisioning).
 

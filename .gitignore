@@ -58,6 +58,11 @@ xcuserdata/
 .pub/
 **/doc/api/
 
+# --- Nested SDK sub-repos (each is its own git repo, tracked separately) ---
+observe-swift/
+observe-dart/
+observe-js/
+
 # --- AI tooling (reproducible via the skills CLI; not part of the project) ---
 .agents/
 .claude/skills/

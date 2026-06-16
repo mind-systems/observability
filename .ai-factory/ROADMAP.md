@@ -13,10 +13,11 @@
 
 ### Phase 2 — SDKs
 
-- [ ] **Node/TS SDK** — covers mind_api, mind_mcp, tradeoxy_core: OTLP/HTTP exporter, `AsyncLocalStorage` trace context, Winston transport adapter, uniform `init`/`log` API, inject/extract helpers
-- [ ] **Swift SDK** — broker: `Telemetry` sink behind the custom `actor Logger`, OTLP/HTTP exporter, `@TaskLocal` trace context, gRPC metadata inject/extract — no call sites changed
-- [ ] **Web JS SDK** — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular); trace origination on user action, `traceparent` injection on outgoing HTTP
-- [ ] **Dart/Flutter SDK** — mind_mobile: OTLP/HTTP exporter (batched, offline-tolerant), `Zone` context, `logPrint` sink adapter, propagation on outgoing HTTP/gRPC
+- [ ] **`observe-js` SDK** — one isomorphic package (Node + browser); platform-neutral core (OTLP/HTTP exporter, record model, batching, resource attributes) with two thin layers selected via conditional `exports`, uniform `init`/`log` API and inject/extract helpers shared across both:
+  - [ ] Node layer — covers mind_api, mind_mcp, tradeoxy_core: `AsyncLocalStorage` trace context, Winston transport adapter
+  - [ ] Browser layer — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular): `Zone` trace context, trace origination on user action, `traceparent` injection on outgoing HTTP
+- [ ] **`observe-swift` SDK** — broker: `Telemetry` sink behind the custom `actor Logger`, OTLP/HTTP exporter, `@TaskLocal` trace context, gRPC metadata inject/extract — no call sites changed
+- [ ] **`observe-dart` SDK** — mind_mobile: OTLP/HTTP exporter (batched, offline-tolerant), `Zone` context, `logPrint` sink adapter, propagation on outgoing HTTP/gRPC
 
 ### Phase 3 — Tooling
 

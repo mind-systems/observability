@@ -15,22 +15,25 @@ There is no custom storage engine, no business domain, and no layered applicatio
 
 ## Folder Structure
 
+This is a **polyrepo**: a root coordination repo that holds the architecture, roadmap, AI context, and the local backend run-config and tooling, with each platform SDK as its **own git repository** cloned inside the root.
+
 ```
-observability/
-├── sdks/
-│   ├── swift/      # Swift SDK — Telemetry sink, OTLP/HTTP exporter, @TaskLocal trace context
-│   ├── node/       # Node/TS SDK — exporter, AsyncLocalStorage context, Winston transport adapter
-│   ├── web/        # web JS SDK — framework-agnostic (React, Angular), Zone-based context
-│   └── dart/       # Dart/Flutter SDK — exporter, Zone context, logPrint sink adapter
-├── backend/        # off-the-shelf engine — native run config only, NO Docker
-│   ├── loki/       # Loki config: OTLP log ingestion, low-cardinality labels, local-FS storage
-│   └── grafana/    # Grafana provisioning: Loki datasource, dashboards
-├── tools/          # thin query/MCP wrapper for common debug slices (LogQL over Loki HTTP API)
-├── docs/
-└── .ai-factory/
+observability/              # root coordination repo — architecture, roadmap, AI context, local backend run-config + tooling
+├── .ai-factory/            # architecture, roadmap, project spec, integration notes
+├── .claude/                # shared Claude Code skills
+├── backend/                # off-the-shelf engine — native run config only, NO Docker
+│   ├── loki/               # Loki config: OTLP log ingestion, low-cardinality labels, local-FS storage
+│   └── grafana/            # Grafana provisioning: Loki datasource, dashboards
+├── tools/                  # thin query/MCP wrapper for common debug slices (LogQL over Loki HTTP API)
+│
+├── observe-swift/          # Swift SDK — separate git repo; sink, OTLP/HTTP exporter, @TaskLocal context, gRPC-metadata propagation
+├── observe-dart/           # Dart/Flutter SDK — separate git repo; exporter, Zone context, offline-tolerant batching
+└── observe-js/             # isomorphic Node + browser SDK — separate git repo; neutral core + AsyncLocalStorage (Node) / Zone (browser) layers
 ```
 
-Only `sdks/` and `tools/` contain code we own. `backend/` holds configuration for binaries installed via Homebrew — no engine code lives here. Directories for `tempo/`, `pyroscope/`, `mimir/` are added under `backend/` when those signals are introduced.
+Each `observe-*/` is an **independent git repository** cloned inside the root and excluded from the root's tracking (it appears in the root `.gitignore`). Run `git` from inside the sub-directory, not from the root. The SDKs are not published to any registry — consumers install them by git URL pinned to a tag.
+
+Only the `observe-*/` sub-repos and `tools/` contain code we own. `backend/` holds configuration for binaries installed via Homebrew — no engine code lives here; it and `tools/` are local-only and not shipped. Directories for `tempo/`, `pyroscope/`, `mimir/` are added under `backend/` when those signals are introduced.
 
 ## Dependency Rules
 

@@ -4,80 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A **local, generic observability stack + multi-platform SDK** for debugging across projects. It replaces per-service file logging (each service writes its own files, manually merged by timestamp) with one place where structured logs — and later traces and profiles — are correlated automatically.
+A **local, no-Docker observability stack + a thin multi-platform SDK** for debugging across projects. It replaces per-service file logging (each service writes its own files, manually merged by timestamp) with one place where structured logs — and later traces and profiles — are correlated automatically by `trace_id`.
 
-The SDK is the integration surface — drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one: **tradeoxy** and **mind** (both under `~/projects`). It currently runs **locally only**, for debugging on the developer's machine; a cloud deployment is a planned later step.
+This root repo is the **coordination layer**. It holds the architecture, roadmap, AI context, and the local backend run-config and tooling. The platform SDKs each live in their own git repository cloned inside this directory. The SDK is the integration surface: drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one — **tradeoxy** and **mind** (both under `~/projects`) — but the SDK is project-agnostic. Local only for now; cloud is a planned later step.
+
+## Repository structure
+
+The SDKs are **separate git repositories** (each has its own `.git`) living inside this root as subdirectories, excluded from the root's tracking via `.gitignore`.
+
+| Directory | GitHub | Stack | Purpose |
+|---|---|---|---|
+| `observe-swift/` | [observe-swift](https://github.com/mind-systems/observe-swift) | Swift / SwiftPM | Swift OTLP/HTTP logging SDK — separate git repo |
+| `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK — separate git repo |
+| `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK — separate git repo |
+
+**Git operations** (status, diff, commit, branch, push) must be run **inside the respective sub-directory**, not from the root — the root has no visibility into changes inside the SDK repos. Consumers install an SDK by **git URL pinned to a tag**; there is no registry release.
+
+Read a sub-repo's `CLAUDE.md` before working within it — it is the source of truth for that platform's detailed contract (public API, ambient context mechanism, propagation, distribution).
+
+## This repo is the coordinator
+
+The root holds cross-project plans, roadmaps, and AI context (`.ai-factory/`), shared skills (`.claude/`), and two **local-only** pieces that are not shipped to consumers:
+
+- `backend/` — native run config for the off-the-shelf engine: Loki config (OTLP log ingestion, low-cardinality labels, local-FS storage) and Grafana provisioning (Loki datasource, dashboards). No engine code — the binaries come from Homebrew.
+- `tools/` — a thin query / MCP wrapper over the Loki HTTP API (LogQL) for common debug slices: since-last-restart, by `trace_id`, by level/project/time window.
+
+The developer browses and selects log lines in Grafana; Claude pulls slices programmatically through `tools/`.
 
 ## Hard constraints
 
 - **No Docker.** Docker is not acceptable on the target machine — it must not be required. Anything that only runs via Docker on macOS is disqualified (this is why SigNoz was rejected).
 - **Native on macOS.** Backend components must run as native processes (Homebrew binaries / `brew services`).
 
-## Scope now: logs only
+## Backend decision: don't build the engine
 
-Only logging is in scope right now. Traces and profiling are on the roadmap but **not** built yet. Everything below is designed so adding them later requires **no re-platforming** — see "Growth path".
+Structured logging, distributed tracing via correlation IDs, and continuous profiling are solved problems, so the storage/query/UI engine is taken off the shelf, not written. What gets built here is a thin SDK and a set of conventions. The real future-proofing is **OTLP at the SDK boundary**: every SDK emits OTLP, the only contract host apps depend on, so the backend behind it stays swappable.
 
-## Core decision: don't build the engine
-
-The need decomposes into solved problems — **structured logging**, **distributed tracing via correlation IDs**, and **continuous profiling** — so the storage/query/UI engine is taken off the shelf, not written. What gets built here is a thin SDK and a set of conventions.
-
-The real future-proofing is **OTLP at the SDK boundary**: every SDK emits OpenTelemetry OTLP, which is the only contract the host apps depend on. The backend behind OTLP stays swappable — local today, cloud tomorrow, more signals over the same wire.
-
-- **Transport / SDK → OTLP.** Each consuming project keeps its own logger and changes only the sink. Because the official OpenTelemetry SDKs are uneven across our platforms (Dart/Flutter and browser logging are weak), the SDK is a **thin house library per platform that speaks OTLP/HTTP**, with a uniform minimal API.
-- **Backend → Grafana family (off-the-shelf, native, no Docker).** Chosen because it is the only ecosystem that covers the entire roadmap in one place with cross-signal correlation: **Loki** (logs), **Tempo** (traces → service graph / pipelines), **Pyroscope** (profiling → flamegraphs), **Mimir** (metrics), all visualized in **Grafana**, all OTLP-native, with a mature cloud story (Grafana Cloud ingests OTLP directly).
-
-**Now we stand up only Grafana + Loki (logs).** Tempo, Pyroscope, Mimir, and cloud are deferred.
+The backend is the **Grafana family**, chosen because it covers the whole roadmap in one place with cross-signal correlation: **Loki** (logs), Tempo (traces), Pyroscope (profiling), Mimir (metrics), visualized in **Grafana**, all OTLP-native, with a mature cloud story (Grafana Cloud ingests OTLP directly). **Now we stand up only Grafana + Loki (logs).** Everything else is deferred — see Growth path.
 
 ## The loggers are custom — only the transport moves
 
-Every consuming project already has a deliberately curated, custom logger. The developer writes exactly the lines they care about and avoids noisy default framework logging. **No call sites are rewritten.** In each project the output sink is localized to a single place; that is the only thing that changes.
+Every consuming project already has a deliberately curated, custom logger; the developer writes exactly the lines they care about. **No call sites are rewritten.** In each project the output sink is localized to a single place; that single sink is the only thing that changes, plus a one-time `init` at startup. `trace_id` is attached automatically from ambient context, so individual log statements are never touched.
 
-| Project | Stack | Logger | Single swap point |
-|---|---|---|---|
-| tradeoxy_broker | Swift | custom `actor Logger`, API `log(svc:_:)`, ~168 sites, JSON `{ts,svc,msg}`, **independent of swift-log** | `Logger.append(svc:msg:)` in `Sources/App/Managers/Logger.swift` |
-| tradeoxy_core | NestJS | Winston (nest-winston), ~112 sites, JSON `{ts,svc,msg}` | `transports` in `src/common/logger/winston.config.ts` |
-| mind_api | NestJS | Winston, JSON | `WinstonModule` in `src/main.ts` |
-| mind_mobile | Flutter/Dart | `logPrint`/`log` in `lib/Logger.dart` (`dart:developer.log`) | `lib/Logger.dart` |
-| mind_web | React/TS | none (bare `console`) | new thin wrapper |
-| tradeoxy_gui | Angular | none (bare `console`) | new thin wrapper |
-| mind_mcp | Node/TS | `console.error` → stderr | optional |
+| Project | Stack | Logger | Single swap point | Target SDK |
+|---|---|---|---|---|
+| tradeoxy_broker | Swift | custom `actor Logger`, API `log(svc:_:)`, ~168 sites, JSON `{ts,svc,msg}`, **independent of swift-log** | `Logger.append(svc:msg:)` in `Sources/App/Managers/Logger.swift` | `observe-swift` |
+| tradeoxy_core | NestJS | Winston (nest-winston), ~112 sites, JSON `{ts,svc,msg}` | `transports` in `src/common/logger/winston.config.ts` | `observe-js` (Node) |
+| mind_api | NestJS | Winston, JSON | `WinstonModule` in `src/main.ts` | `observe-js` (Node) |
+| mind_mobile | Flutter/Dart | `logPrint`/`log` in `lib/Logger.dart` (`dart:developer.log`) | `lib/Logger.dart` | `observe-dart` |
+| mind_web | React/TS | none (bare `console`) | new thin wrapper | `observe-js` (browser) |
+| tradeoxy_gui | Angular | none (bare `console`) | new thin wrapper | `observe-js` (browser) |
+| mind_mcp | Node/TS | `console.error` → stderr (stdout reserved for the MCP protocol) | optional | `observe-js` (Node) |
 
-## SDK targets and API
-
-Four platform targets cover everything: **Swift** (broker), **Node/TS** (core, mind_api, mcp), **web JS** (mind_web React, tradeoxy_gui Angular — framework-agnostic), **Dart/Flutter** (mind_mobile).
-
-Uniform minimal surface on every platform:
-
-- `init(project, service)` — sets resource attributes (`project`, `service.name`, a fresh `service.instance.id`) and emits the `service.start` restart marker.
-- `log(level, msg, attrs?)` — what the project's existing sink calls (the custom `append`, the Winston transport, `logPrint`, etc.).
-- trace context — `startSpan` / `withSpan`, plus inject/extract for HTTP headers and gRPC metadata. (Logs carry `trace_id` now; spans are exported once Tempo is added.)
-
-## Cross-service correlation
-
-The point: reconstruct a chain end to end — button pressed in web → webhook → broker handled it → core responded — as one correlated view, with no manual timestamp merging.
-
-No correlation id exists between broker and core today (the only shared shape is the `{ts,svc,msg}` JSON). The SDK introduces `trace_id` transparently: it is injected automatically via ambient context storage — `@TaskLocal` (Swift), `AsyncLocalStorage` (Node), `Zone` (Dart/web) — so **call sites do not change**. Trace context propagates web → broker (`traceparent` header) → core (gRPC metadata). Now, every log line is stamped with `trace_id`; once Tempo is added, Grafana stitches logs↔traces by that id.
-
-## Multi-project model
-
-Isolation is handled with **resource attributes**: every service sets `project=<name>` (`tradeoxy`, `mind`) plus a `service.name`. Filtering by `project` in Grafana and the query API gives per-project and cross-project views.
-
-**Loki labels stay low-cardinality** — only `project`, `service`, `level` become labels; `trace_id` and other high-cardinality fields live in the log body / structured metadata, never as labels.
-
-## Restart markers
-
-After a restart it must be obvious where to start reading. Each service gets a fresh `service.instance.id` on `init` and emits a `service.start` event. "Logs since last restart" is then a query for everything after the latest `service.start` for that service.
-
-## How Claude queries logs
-
-Claude pulls the needed slice itself via the **Loki HTTP API (LogQL)**, while the developer browses and selects lines visually in Grafana and hands them over. Typical requests: the full feed since a service's last `service.start`, logs in a time window filtered by level and `project`, or everything sharing a `trace_id`. (Tempo's TraceQL is added with traces later.)
-
-## What gets built here
-
-- The four platform SDKs (Swift, Node/TS, web JS, Dart/Flutter) with the API above and an OTLP/HTTP exporter.
-- Native (no-Docker) run configuration for Grafana + Loki: Loki config + Grafana provisioning (datasource, dashboards).
-- Trace-context propagation glue for webhook → broker → core → web.
-- A thin query wrapper / MCP glue for the common debug slices.
+Isolation across projects is by **resource attributes**: every service sets `project` (`tradeoxy`, `mind`) plus a `service.name`, giving per-project and cross-project views. The shared OTLP contract — public API, resource attributes, the `service.start` restart marker, ambient `trace_id` propagation, low-cardinality label policy, never-break-the-host — is defined in `.ai-factory/ARCHITECTURE.md` and in each sub-repo's `CLAUDE.md`; it is not duplicated here.
 
 ## Growth path (deferred, no re-platform)
 
@@ -87,14 +66,48 @@ Claude pulls the needed slice itself via the **Loki HTTP API (LogQL)**, while th
 - **Cloud** → point the OTLP exporter at Grafana Cloud (it ingests OTLP directly). SDKs and call sites do not change.
 - **E2E from observed flows** → build on recorded traces via the backend query API.
 
+## Scope routing
+
+- Work scoped to a single SDK → operate **inside** that sub-repo; its plans/roadmaps go to that repo's own `.ai-factory/`.
+- Cross-project, backend, tooling, or architectural work → use the **root** `.ai-factory/`.
+
+### `/aif-plan` routing rules
+
+When `/aif-plan` is run, first check the current working directory:
+
+- **CWD is inside a sub-repo** (`observe-swift/`, `observe-dart/`, `observe-js/`) → save the plan to `.ai-factory/plans/` relative to CWD. No detection needed.
+- **CWD is the root** → detect the target from the task description:
+
+| Keywords in description | Target | Plan path |
+|---|---|---|
+| Swift, SwiftPM, `@TaskLocal`, actor Logger, broker | `observe-swift` | `observe-swift/.ai-factory/plans/` |
+| Dart, Flutter, `Zone`, `logPrint`, mobile | `observe-dart` | `observe-dart/.ai-factory/plans/` |
+| TypeScript, Node, browser, web, `AsyncLocalStorage`, Winston, isomorphic | `observe-js` | `observe-js/.ai-factory/plans/` |
+| backend, Loki, Grafana, tools, query, MCP, architecture, roadmap, cross-project, or ambiguous | root | `.ai-factory/plans/` |
+
+If detection is ambiguous, ask which target the plan is for.
+
+### `/aif-roadmap` routing rules
+
+Default: works relative to CWD — no detection needed when already inside a sub-repo. When run from the root, or when the user names a target in the argument:
+
+| Argument prefix | Target |
+|---|---|
+| `swift` | `observe-swift/.ai-factory/ROADMAP.md` |
+| `dart` | `observe-dart/.ai-factory/ROADMAP.md` |
+| `js` | `observe-js/.ai-factory/ROADMAP.md` |
+| no prefix / `check` / vision text | `.ai-factory/ROADMAP.md` relative to CWD |
+
+Strip the target prefix before processing the remaining argument.
+
+## Architecture
+
+See `.ai-factory/ARCHITECTURE.md` for module boundaries, the OTLP contract, the polyrepo folder structure, and dependency rules.
+
 ## Language
 
 All files — docs, plans, config, generated files — are written in **English**, regardless of the conversation language.
 
-## Architecture
-
-See `.ai-factory/ARCHITECTURE.md` for module boundaries, the OTLP contract, folder structure, and dependency rules.
-
 ## Status
 
-Greenfield. No application code yet. This file captures the architecture decisions agreed before implementation.
+Greenfield. No application code yet. This file and the linked docs capture the architecture decisions agreed before implementation.

@@ -2,6 +2,46 @@
 
 A local, no-Docker observability stack and a thin multi-platform SDK that gives every project one shared place to send its logs.
 
+This repository is the coordination layer. It holds the architecture, roadmap, and AI context; each platform SDK lives in its own git repository cloned inside this directory.
+
+## Cloning the workspace
+
+Copy the prompt below and send it to Claude Code in an empty directory. It clones the root and every SDK sub-repository into the right places automatically.
+
+---
+
+```
+Clone the observability workspace and all SDK sub-repos into the correct directory structure.
+
+Run these commands in order:
+1. git clone https://github.com/mind-systems/observability.git observability
+2. cd observability
+3. git clone https://github.com/mind-systems/observe-swift.git observe-swift
+4. git clone https://github.com/mind-systems/observe-dart.git observe-dart
+5. git clone https://github.com/mind-systems/observe-js.git observe-js
+
+Directory names must be preserved exactly — the root coordination layer references the SDKs by these paths.
+
+After cloning, for each repository (root, observe-swift, observe-dart, observe-js) find the most recently committed branch and switch to it:
+- Run `git branch -r --sort=-committerdate` to list remote branches by recency
+- Check out the top result (skip HEAD and main/master if a feature branch is more recent)
+- If the most recent branch is already main/master, stay on it
+
+After switching branches everywhere, read CLAUDE.md in the root and in each sub-project to understand the project structure and development workflow.
+```
+
+---
+
+## SDK sub-repositories
+
+| Directory | GitHub | Stack | Purpose |
+|-----------|--------|-------|---------|
+| `observe-swift/` | [observe-swift](https://github.com/mind-systems/observe-swift) | Swift / SwiftPM | Swift OTLP/HTTP logging SDK |
+| `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK |
+| `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK |
+
+Each sub-directory is an independent git repository. Run `git` commands from inside the sub-directory, not from the root.
+
 ## The problem
 
 Each service writes its own log files. The broker logs to its files, core logs to its files, the mobile app prints to a console that persists nothing. Debugging anything that crosses a boundary means opening several logs and merging them by hand on timestamps. Restarts leave no trace, so after a fix it's unclear where the new logs begin. The logging in each project is already deliberately curated — the noise problem is solved — but it lives in disconnected places.
