@@ -8,8 +8,8 @@
 
 ### Phase 1 — Foundation
 
-- [ ] **Backend bootstrap** — stand up Grafana + Loki natively via Homebrew (no Docker); verify Loki's OTLP log ingestion, local-FS storage, and low-cardinality label policy end to end
-- [ ] **OTLP log contract & propagation conventions** — define the shared record shape and conventions: resource attributes (`project`, `service.name`, `service.instance.id`), level mapping, the `service.start` restart marker, Loki label policy, and trace-context propagation (`traceparent` over HTTP, trace id in gRPC metadata)
+- [x] **Backend bootstrap** — stand up Grafana + Loki natively via Homebrew (no Docker); one command from the repo root; verify Loki's OTLP log ingestion, local-FS storage, and low-cardinality label policy end to end against the frozen contract fixtures — see `.ai-factory/notes/backend-bootstrap.md`
+- [x] **OTLP log contract & propagation conventions** — define the shared record shape and conventions: resource attributes (`project`, `service.name`, `service.instance.id`), level mapping, the `service.start` restart marker, Loki label policy, and trace-context propagation (`traceparent` over HTTP, trace id in gRPC metadata)
 
 ### Phase 2 — SDKs
 

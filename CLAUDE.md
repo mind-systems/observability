@@ -109,6 +109,12 @@ See `.ai-factory/ARCHITECTURE.md` for module boundaries, the OTLP contract, the 
 
 All files — docs, plans, config, generated files — are written in **English**, regardless of the conversation language.
 
+## Documentation
+
+| Guide | Path | Description |
+|-------|------|-------------|
+| Backend | `docs/backend.md` | Loki + Grafana setup, configuration decisions, and operational notes |
+
 ## Status
 
-Greenfield. No application code yet. This file and the linked docs capture the architecture decisions agreed before implementation.
+The backend (Loki + Grafana) is up and verified. The scope right now is **logs only**. This file and the linked docs capture the architecture decisions agreed before implementation.

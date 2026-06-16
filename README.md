@@ -70,6 +70,26 @@ The single contract between a project and the backend is OTLP. Everything behind
 
 Two projects integrate this from the start — **mind** (mobile, API, web, MCP) and **tradeoxy** (broker, core, GUI) — but the SDK is project-agnostic and meant to drop into anything. SDKs target Swift, Node/TypeScript, web JavaScript, and Dart/Flutter.
 
+## Run the backend locally
+
+```
+make backend-up
+```
+
+That single command installs Loki and Grafana via Homebrew (if needed) and starts both as native macOS processes. No Docker.
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Grafana | http://localhost:3000 | login: admin / admin |
+| Loki    | http://localhost:3100 | |
+| OTLP log ingest | `POST http://localhost:3100/otlp/v1/logs` | point any SDK here |
+
+```
+make backend-down     # stop both
+make backend-status   # check whether they're running
+make backend-verify   # end-to-end test against the contract fixtures
+```
+
 ## Status
 
-Greenfield. The scope right now is **logs only**; the architecture is designed so traces and profiling can be added later without re-platforming. See `CLAUDE.md` for the architecture decisions and `.ai-factory/` for the roadmap, project specification, and per-project integration notes.
+The backend (Loki + Grafana) is up. The scope right now is **logs only**; the architecture is designed so traces and profiling can be added later without re-platforming. See `CLAUDE.md` for the architecture decisions and `.ai-factory/` for the roadmap, project specification, and per-project integration notes.
