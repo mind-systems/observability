@@ -13,9 +13,9 @@
 
 ### Phase 2 — SDKs
 
-- [ ] **`observe-js` SDK** — one isomorphic package (Node + browser); platform-neutral core (OTLP/HTTP exporter, record model, batching, resource attributes) with two thin layers selected via conditional `exports`, uniform `init`/`log` API and inject/extract helpers shared across both:
+- [ ] **`observe-js` SDK** — one isomorphic package (Node + browser); platform-neutral core (OTLP/HTTP exporter, record model, batching, resource attributes) with two thin layers selected via conditional `exports`, uniform `init`/`log` API and carrier-agnostic inject/extract shared across both. The reference SDK; pins `observe-contract@v0.1.2` — **decomposed into atomic tasks in `observe-js/.ai-factory/ROADMAP.md`**:
   - [ ] Node layer — covers mind_api, mind_mcp, tradeoxy_core: `AsyncLocalStorage` trace context, Winston transport adapter
-  - [ ] Browser layer — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular): `Zone` trace context, trace origination on user action, `traceparent` injection on outgoing HTTP
+  - [ ] Browser layer — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular): explicit (non-`zone.js`) trace context, trace origination on user action, `traceparent` injection on outgoing HTTP
 - [ ] **`observe-swift` SDK** — broker: `Telemetry` sink behind the custom `actor Logger`, OTLP/HTTP exporter, `@TaskLocal` trace context, gRPC metadata inject/extract — no call sites changed
 - [ ] **`observe-dart` SDK** — mind_mobile: OTLP/HTTP exporter (batched, offline-tolerant), `Zone` context, `logPrint` sink adapter, propagation on outgoing HTTP/gRPC
 
