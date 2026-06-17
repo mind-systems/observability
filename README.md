@@ -61,6 +61,16 @@ The integration is transport-only. A project does not rewrite the places where i
 
 The single contract between a project and the backend is OTLP. Everything behind that contract — where logs are stored, how they're queried, the UI — is off-the-shelf and replaceable. The backend is the Grafana family (Loki for logs), run as native macOS processes. This keeps the door open to add traces, profiling, and a cloud deployment later over the same wire, without changing any project's code.
 
+## Log destinations
+
+Each project chooses where its logs go via one environment variable, `LOG_DESTINATION`:
+
+- `file` — a local log file in the project, as before; the observability stack does not see it.
+- `grafana` — shipped over OTLP to the shared local Loki, browsable in Grafana.
+- `both` — both in parallel.
+
+The switch lives in each project's own logger config and is set per service. See `docs/log-destinations.md`.
+
 ## Constraints
 
 - **No Docker.** Every component runs natively. Anything that requires Docker on macOS is disqualified.

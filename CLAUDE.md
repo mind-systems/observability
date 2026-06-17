@@ -114,6 +114,7 @@ All files — docs, plans, config, generated files — are written in **English*
 | Guide | Path | Description |
 |-------|------|-------------|
 | Backend | `docs/backend.md` | Loki + Grafana setup, configuration decisions, and operational notes |
+| Log destinations | `docs/log-destinations.md` | The `LOG_DESTINATION` switch (`file` / `grafana` / `both`) each project uses to send logs to a local file, the shared Grafana, or both |
 
 ## Status
 
