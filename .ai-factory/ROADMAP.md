@@ -13,11 +13,11 @@
 
 ### Phase 2 — SDKs
 
-- [ ] **`observe-js` SDK** — one isomorphic package (Node + browser); platform-neutral core (OTLP/HTTP exporter, record model, batching, resource attributes) with two thin layers selected via conditional `exports`, uniform `init`/`log` API and carrier-agnostic inject/extract shared across both. The reference SDK; pins `observe-contract@v0.1.2` — **decomposed into atomic tasks in `observe-js/.ai-factory/ROADMAP.md`**:
-  - [ ] Node layer — covers mind_api, mind_mcp, tradeoxy_core: `AsyncLocalStorage` trace context, Winston transport adapter
-  - [ ] Browser layer — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular): explicit (non-`zone.js`) trace context, trace origination on user action, `traceparent` injection on outgoing HTTP
-- [ ] **`observe-swift` SDK** — broker: `Telemetry` sink behind the custom `actor Logger`, OTLP/HTTP exporter, `@TaskLocal` trace context, gRPC metadata inject/extract — no call sites changed
-- [ ] **`observe-dart` SDK** — mind_mobile: OTLP/HTTP exporter (batched, offline-tolerant), `Zone` context, `logPrint` sink adapter, propagation on outgoing HTTP/gRPC
+- [x] **`observe-js` SDK** — one isomorphic package (Node + browser); platform-neutral core (OTLP/HTTP exporter, record model, batching, resource attributes) with two thin layers selected via conditional `exports`, uniform `init`/`log` API and carrier-agnostic inject/extract shared across both. The reference SDK; pins `observe-contract@v0.1.2` — **decomposed into atomic tasks in `observe-js/.ai-factory/ROADMAP.md`**:
+  - [x] Node layer — covers mind_api, mind_mcp, tradeoxy_core: `AsyncLocalStorage` trace context, Winston transport adapter
+  - [x] Browser layer — framework-agnostic for mind_web (React) and tradeoxy_gui (Angular): explicit (non-`zone.js`) trace context, trace origination on user action, `traceparent` injection on outgoing HTTP
+- [ ] **`observe-dart` SDK** — mind_mobile: pure-Dart core (OTLP/HTTP exporter via `package:http`, record model, bounded offline-tolerant batching, resource attributes) with Flutter only at the `logPrint` sink adapter edge; native `Zone` trace context, uniform `init`/`log` API and carrier-agnostic inject/extract. Pins `observe-contract@v0.1.2` — **decomposed into atomic tasks in `observe-dart/.ai-factory/ROADMAP.md`**
+- [ ] **`observe-swift` SDK** — tradeoxy broker: pure-Swift zero-dep `Observe` module (Foundation only); `URLSession` OTLP/HTTP exporter behind an `Exporter` protocol seam (host-injectable `AsyncHTTPClient` on Linux/Vapor), record model, actor-isolated bounded offline-tolerant batching, resource attributes; `@TaskLocal` trace context, uniform `init`/`log` API, carrier-agnostic inject/extract (HTTP `traceparent` in, gRPC metadata out); sink behind the custom `actor Logger`'s `append(svc:msg:)` — ~168 call sites untouched. Pins `observe-contract@v0.1.2` — **decomposed into atomic tasks in `observe-swift/.ai-factory/ROADMAP.md`**
 
 ### Phase 3 — Tooling
 
