@@ -55,7 +55,6 @@ Every consuming project already has a deliberately curated, custom logger; the d
 | mind_mobile | Flutter/Dart | `logPrint`/`log` in `lib/Logger.dart` (`dart:developer.log`) | `lib/Logger.dart` | `observe-dart` |
 | mind_web | React/TS | none (bare `console`) | new thin wrapper | `observe-js` (browser) |
 | tradeoxy_gui | Angular | none (bare `console`) | new thin wrapper | `observe-js` (browser) |
-| mind_mcp | Node/TS | `console.error` → stderr (stdout reserved for the MCP protocol) | optional | `observe-js` (Node) |
 
 Isolation across projects is by **resource attributes**: every service sets `project` (`tradeoxy`, `mind`) plus a `service.name`, giving per-project and cross-project views. The shared OTLP contract — public API, resource attributes, the `service.start` restart marker, ambient `trace_id` propagation, low-cardinality label policy, never-break-the-host — is defined in `.ai-factory/ARCHITECTURE.md` and in each sub-repo's `CLAUDE.md`; it is not duplicated here.
 

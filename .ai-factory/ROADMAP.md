@@ -34,7 +34,6 @@
 - [ ] **mind_mobile — integrate Dart/Flutter SDK** — see `.ai-factory/notes/01-integrate-mind-mobile.md`
 - [ ] **mind_api — integrate `observe-js` (Node)** — see `.ai-factory/notes/02-integrate-mind-api.md`
 - [ ] **mind_web — integrate `observe-js` (browser)** — see `.ai-factory/notes/03-integrate-mind-web.md`
-- [ ] **mind_mcp — integrate `observe-js` (Node)** — see `.ai-factory/notes/04-integrate-mind-mcp.md`
 
 ### tradeoxy
 

@@ -25,7 +25,7 @@ Logging only, for now. Traces and profiling are on the roadmap but not yet built
 
 ## Tech Stack
 
-- **SDK platforms:** Swift (broker), Node/TypeScript (core, mind_api, mcp), web JS — framework-agnostic (mind_web React, tradeoxy_gui Angular), Dart/Flutter (mind_mobile)
+- **SDK platforms:** Swift (broker), Node/TypeScript (core, mind_api), web JS — framework-agnostic (mind_web React, tradeoxy_gui Angular), Dart/Flutter (mind_mobile)
 - **Transport / protocol:** OpenTelemetry OTLP over HTTP (thin house exporter per platform) — the swappable boundary
 - **Backend (off-the-shelf, native, no Docker):** Grafana family — **Loki** (logs, now), with **Tempo** (traces), **Pyroscope** (profiling/flamegraphs), **Mimir** (metrics) on the growth path; **Grafana** as the UI
 - **Ambient trace context:** `@TaskLocal` (Swift), `AsyncLocalStorage` (Node), `Zone` (Dart/web)

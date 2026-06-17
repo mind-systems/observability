@@ -78,7 +78,7 @@ The switch lives in each project's own logger config and is set per service. See
 
 ## Consumers
 
-Two projects integrate this from the start — **mind** (mobile, API, web, MCP) and **tradeoxy** (broker, core, GUI) — but the SDK is project-agnostic and meant to drop into anything. SDKs target Swift, Node/TypeScript, web JavaScript, and Dart/Flutter.
+Two projects integrate this from the start — **mind** (mobile, API, web) and **tradeoxy** (broker, core, GUI) — but the SDK is project-agnostic and meant to drop into anything. SDKs target Swift, Node/TypeScript, web JavaScript, and Dart/Flutter.
 
 ## Run the backend locally
 
