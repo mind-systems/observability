@@ -115,6 +115,14 @@ All files — docs, plans, config, generated files — are written in **English*
 | Backend | `docs/backend.md` | Loki + Grafana setup, configuration decisions, and operational notes |
 | Log destinations | `docs/log-destinations.md` | The `LOG_DESTINATION` switch (`file` / `grafana` / `both`) each project uses to send logs to a local file, the shared Grafana, or both |
 
+## Read this first — start here, then your playbook
+
+- **Fresh machine — set up the backend?** Read **`docs/playbooks/environment-setup.md`** — Loki + Grafana as native processes (no Docker): one command on macOS (`make backend-up`), the same two binaries run by hand on Linux/Windows.
+- **Integrating an `observe-*` SDK into a consuming project?** Read **`docs/playbooks/sdk-integration.md`** — the distilled playbook from the first three integrations (mind_mobile, mind_api, mind_web): the non-negotiable principles (transport swap only, zero new log lines, zero call-site changes), the generic **Phase 1 (sink swap) / Phase 2 (trace correlation)** task sequence, and the platform gotchas. Each project's specific scope lives in its `.ai-factory/notes/0N-integrate-*.md`.
+- **Implementing a new platform SDK (a new `observe-*` target, e.g. Python)?** Read **`docs/playbooks/sdk-authoring.md`** — the cross-platform invariants, the generic Foundation→Core→Adapters→Verification task sequence, and the watch-points distilled from the existing SDKs. The frozen contract (`observe-contract`) and the reference SDK (`observe-js`) are its anchors.
+
+Both are the cross-cutting how-and-why that each effort otherwise rediscovers the hard way.
+
 ## Status
 
 The backend (Loki + Grafana) is up and verified. The scope right now is **logs only**. This file and the linked docs capture the architecture decisions agreed before implementation.
