@@ -21,7 +21,12 @@ The SDKs are **separate git repositories** (each has its own `.git`) living insi
 
 **Git operations** (status, diff, commit, branch, push) must be run **inside the respective sub-directory**, not from the root — the root has no visibility into changes inside the SDK repos. Consumers install an SDK by **git URL pinned to a tag**; there is no registry release.
 
-Read a sub-repo's `CLAUDE.md` before working within it — it is the source of truth for that platform's detailed contract (public API, ambient context mechanism, propagation, distribution).
+**Working inside a sub-repo? Read its own `CLAUDE.md` first.** Each SDK is a separate project with its own agent context — the source of truth for that platform's detailed contract (public API, ambient context mechanism, propagation, distribution, build). This root `CLAUDE.md` is the coordination layer; it does **not** replace the sub-repo's. When a task touches one of these directories, read the matching file before doing anything there:
+
+- `observe-swift/CLAUDE.md`
+- `observe-dart/CLAUDE.md`
+- `observe-js/CLAUDE.md`
+- `observe-contract/CLAUDE.md`
 
 ## This repo is the coordinator
 
