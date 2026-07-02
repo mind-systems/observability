@@ -34,10 +34,9 @@ The SDKs — and the `observe-write-proxy` service — are **separate git reposi
 
 The root holds cross-project plans, roadmaps, and AI context (`.ai-factory/`), shared skills (`.claude/`), and two **local-only** pieces that are not shipped to consumers:
 
-- `backend/` — native run config for the off-the-shelf engine: Loki config (OTLP log ingestion, low-cardinality labels, local-FS storage) and Grafana provisioning (Loki datasource, dashboards). No engine code — the binaries come from Homebrew.
-- `tools/` — a thin query / MCP wrapper over the Loki HTTP API (LogQL) for common debug slices: since-last-restart, by `trace_id`, by level/project/time window.
+- `backend/` — run config for the off-the-shelf engine: Loki config (OTLP log ingestion, low-cardinality labels, local-FS storage), Grafana provisioning (Loki datasource, dashboards), and `docker-compose.yml` — the cross-service wiring for the **server** deployment (Loki + Grafana + `observe-write-proxy`). Locally everything runs native (Homebrew binaries / `brew services`); the compose file is server-only. No engine code.
 
-The developer browses and selects log lines in Grafana; Claude pulls slices programmatically through `tools/`.
+The developer browses and selects log lines in Grafana; Claude pulls slices through the **`observe-logs` skill**, which queries the Loki HTTP API (LogQL) directly for the common debug slices: since-last-restart, by `trace_id`, by level/project/time window.
 
 ## Hard constraints
 
@@ -75,38 +74,32 @@ Isolation across projects is by **resource attributes**: every service sets `pro
 
 ## Scope routing
 
-- Work scoped to a single SDK → operate **inside** that sub-repo; its plans/roadmaps go to that repo's own `.ai-factory/`.
+- Work scoped to a single sub-repo (an SDK, the contract, the proxy) → operate **inside** it; its plans/roadmaps go to that repo's own `.ai-factory/`.
 - Cross-project, backend, tooling, or architectural work → use the **root** `.ai-factory/`.
-- **SDK code changes never go into the root ROADMAP.** A task that touches `observe-swift`, `observe-dart`, or `observe-js` source belongs in that SDK's own `.ai-factory/ROADMAP.md`. The root ROADMAP covers backend infrastructure and tooling only.
+- **Sub-repo code changes never go into the root ROADMAP.** A task that touches `observe-*` source belongs in that repo's own `.ai-factory/ROADMAP.md`. The root ROADMAP covers backend infrastructure and tooling only.
 
-### `/aif-plan` routing rules
-
-When `/aif-plan` is run, first check the current working directory:
-
-- **CWD is inside a sub-repo** (`observe-swift/`, `observe-dart/`, `observe-js/`) → save the plan to `.ai-factory/plans/` relative to CWD. No detection needed.
-- **CWD is the root** → detect the target from the task description:
-
-| Keywords in description | Target | Plan path |
-|---|---|---|
-| Swift, SwiftPM, `@TaskLocal`, actor Logger, broker | `observe-swift` | `observe-swift/.ai-factory/plans/` |
-| Dart, Flutter, `Zone`, `logPrint`, mobile | `observe-dart` | `observe-dart/.ai-factory/plans/` |
-| TypeScript, Node, browser, web, `AsyncLocalStorage`, Winston, isomorphic | `observe-js` | `observe-js/.ai-factory/plans/` |
-| backend, Loki, Grafana, tools, query, MCP, architecture, roadmap, cross-project, or ambiguous | root | `.ai-factory/plans/` |
-
-If detection is ambiguous, ask which target the plan is for.
-
-### `/aif-roadmap` routing rules
-
-Default: works relative to CWD — no detection needed when already inside a sub-repo. When run from the root, or when the user names a target in the argument:
+### Routing tables (from the root)
 
 | Argument prefix | Target |
 |---|---|
-| `swift` | `observe-swift/.ai-factory/ROADMAP.md` |
-| `dart` | `observe-dart/.ai-factory/ROADMAP.md` |
-| `js` | `observe-js/.ai-factory/ROADMAP.md` |
-| no prefix / `check` / vision text | `.ai-factory/ROADMAP.md` relative to CWD |
+| `swift` | `observe-swift/.ai-factory/` |
+| `dart` | `observe-dart/.ai-factory/` |
+| `js` | `observe-js/.ai-factory/` |
+| `contract` | `observe-contract/.ai-factory/` |
+| `proxy` | `observe-write-proxy/.ai-factory/` |
 
-Strip the target prefix before processing the remaining argument.
+**Otherwise detect from the task description:**
+
+| Keywords in description | Target |
+|---|---|
+| Swift, SwiftPM, `@TaskLocal`, actor Logger, broker | `observe-swift/.ai-factory/` |
+| Dart, Flutter, `Zone`, `logPrint`, mobile | `observe-dart/.ai-factory/` |
+| TypeScript, Node, browser, web, `AsyncLocalStorage`, Winston, isomorphic | `observe-js/.ai-factory/` |
+| contract, golden record, fixtures, severity mapping, label policy | `observe-contract/.ai-factory/` |
+| proxy, write auth, write token, admin plane | `observe-write-proxy/.ai-factory/` |
+| backend, Loki, Grafana, query, architecture, cross-project | root `.ai-factory/` |
+
+If detection is ambiguous, ask which repo the task is for.
 
 ## Architecture
 
@@ -133,4 +126,4 @@ Both are the cross-cutting how-and-why that each effort otherwise rediscovers th
 
 ## Status
 
-The backend (Loki + Grafana) is up and verified. The scope right now is **logs only**. This file and the linked docs capture the architecture decisions agreed before implementation.
+The backend (Loki + Grafana) is up and verified. The SDKs are built and integrated into the first consumers (see the playbooks). The scope right now is **logs only**.
