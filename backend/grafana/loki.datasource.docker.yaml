@@ -1,0 +1,22 @@
+# Docker Compose variant of provisioning/datasources/loki.yaml.
+#
+# Deliberately kept OUTSIDE the provisioning/ tree so Grafana's provisioning
+# scanner never picks it up as a second datasource. It is wired in only via
+# the explicit overlay bind-mount in docker-compose.yml, which mounts this
+# file onto the container's .../datasources/loki.yaml path — a more-specific
+# overlay over the whole provisioning/ directory mount. The only difference
+# from the native file is `url`, which points at the internal Loki service
+# instead of localhost.
+
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: true
+    version: 1
+    editable: false
+    jsonData:
+      maxLines: 1000

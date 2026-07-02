@@ -6,12 +6,12 @@ This repository is the coordination layer. It holds the architecture, roadmap, a
 
 ## Cloning the workspace
 
-Copy the prompt below and send it to Claude Code in an empty directory. It clones the root and every SDK sub-repository into the right places automatically.
+Copy the prompt below and send it to Claude Code in an empty directory. It clones the root and every sub-repository into the right places automatically.
 
 ---
 
 ```
-Clone the observability workspace and all SDK sub-repos into the correct directory structure.
+Clone the observability workspace and all sub-repos (the SDKs and the write-auth proxy) into the correct directory structure.
 
 Run these commands in order:
 1. git clone https://github.com/mind-systems/observability.git observability
@@ -19,10 +19,11 @@ Run these commands in order:
 3. git clone https://github.com/mind-systems/observe-swift.git observe-swift
 4. git clone https://github.com/mind-systems/observe-dart.git observe-dart
 5. git clone https://github.com/mind-systems/observe-js.git observe-js
+6. git clone https://github.com/mind-systems/observe-write-proxy.git observe-write-proxy
 
 Directory names must be preserved exactly — the root coordination layer references the SDKs by these paths.
 
-After cloning, for each repository (root, observe-swift, observe-dart, observe-js) find the most recently committed branch and switch to it:
+After cloning, for each repository (root, observe-swift, observe-dart, observe-js, observe-write-proxy) find the most recently committed branch and switch to it:
 - Run `git branch -r --sort=-committerdate` to list remote branches by recency
 - Check out the top result (skip HEAD and main/master if a feature branch is more recent)
 - If the most recent branch is already main/master, stay on it

@@ -1,0 +1,85 @@
+# Loki config — Docker Compose variant (server deployment)
+#
+# Container variant of loki.yaml: storage paths point at the mounted /loki
+# volume instead of ${HOME}, so no env expansion (-config.expand-env) is
+# required. Keep this file's non-storage settings identical to loki.yaml —
+# see that file for the label-decision rationale.
+#
+# Label decisions (record in .ai-factory/notes/backend-bootstrap.md):
+#   Loki sanitizes resource attribute dots to underscores for label keys, so:
+#     project       ← resource attr 'project'        → label 'project'
+#     service_name  ← resource attr 'service.name'   → label 'service_name'
+#                     (contract's logical label 'service' = Loki label 'service_name')
+#     level         ← log-record attr 'level'         → label 'level'
+#
+#   ignore_defaults: true prevents Loki from auto-promoting the ~17 default
+#   OTel resource attributes (like service.instance.id, k8s.*, etc.) as labels.
+#
+# Storage: data lives on the mounted `loki-data` volume at /loki (persistent
+# across container restarts via the named volume).
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory:  /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester:
+  wal:
+    enabled: true
+    dir: /loki/wal
+    # 0 = disable disk-fullness throttle (default 0.9 triggers on 94%-full volumes).
+    disk_full_threshold: 0
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+query_range:
+  # Disable shard fan-out — not needed on a single-binary instance; causes CPU spin in 3.x.
+  parallelise_shardable_queries: false
+
+querier:
+  max_concurrent: 2
+
+limits_config:
+  # Contract fixtures have historical timestamps; allow ingesting any age in local dev.
+  reject_old_samples: false
+  # No max query length — fixtures are 2+ years old, far beyond the default 30d limit.
+  max_query_length: 0
+  # Disable range-query splitting — monolithic instance executes inline, no sub-queries needed.
+  split_queries_by_interval: 0
+
+  otlp_config:
+    resource_attributes:
+      ignore_defaults: true
+      attributes_config:
+        - action: index_label
+          attributes:
+            - project
+            - service.name
+        # All other resource attributes go to structured metadata automatically.
+    log_attributes:
+      - action: index_label
+        attributes:
+          - level
+      # All other log-record attributes (trace_id, span_id, order.id, event.name, …)
+      # remain as structured metadata — never promoted to labels.

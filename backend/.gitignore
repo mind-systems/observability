@@ -1,0 +1,3 @@
+# Real secrets for the Docker Compose stack — never commit.
+.env
+!.env.example

@@ -1,0 +1,101 @@
+# Docker Compose stack for SERVER deployment.
+#
+# This is an additive layer over the native (Homebrew) backend/ run config —
+# it does not replace it and does not touch any native file. It uses its own
+# *.docker.yaml config variants (see backend/loki/loki.docker.yaml and
+# backend/grafana/loki.datasource.docker.yaml) so the Homebrew `make
+# backend-up` path stays valid by construction.
+#
+# Image tags are pinned to match the Homebrew-tested versions (loki 3.7.2,
+# grafana 13.0.2) — never `:latest`. The Loki tag must stay on the 3.x line:
+# the config is 3.x-shaped (tsdb / schema v13 / parallelise_shardable_queries
+# / disk_full_threshold); a 2.x tag would reject it.
+#
+# Admin credentials are supplied via backend/.env (see .env.example) —
+# GRAFANA_ADMIN_PASSWORD is required and overrides the admin/admin baked
+# into the read-only grafana.ini.
+#
+# Write only — do NOT run this locally. The dev machine is under the
+# project's hard "No Docker" constraint. This file targets the server and is
+# verified by whoever deploys it there.
+
+services:
+  loki:
+    image: grafana/loki:3.7.2
+    restart: unless-stopped
+    # Internal-only: no host port. SDK writes arrive via observe-write-proxy;
+    # reads arrive via the Grafana datasource proxy.
+    volumes:
+      - ./loki/loki.docker.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml -querier.query-ingesters-within=0
+    healthcheck:
+      # The grafana/loki image is built FROM gcr.io/distroless/static:nonroot —
+      # no shell, no wget/curl, so an HTTP-tool healthcheck is impossible here.
+      # Loki 3.6+ ships a native `-health` flag for exactly this reason (checks
+      # its own /ready endpoint and exits 0/1) — see cmd/loki/main.go.
+      test: ["CMD", "/usr/bin/loki", "-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - obs-net
+
+  grafana:
+    image: grafana/grafana:13.0.2
+    restart: unless-stopped
+    ports:
+      # WARNING: this publishes Grafana on 3030 on ALL host interfaces. A
+      # server deployment should front it with a reverse proxy / TLS, or
+      # bind to loopback only (e.g. "127.0.0.1:3030:3000") — see .env.example.
+      - "3030:3000"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      # Overlay: mounted onto the container's datasources/loki.yaml path,
+      # more specific than the provisioning/ mount above, so Grafana sees
+      # exactly one Loki datasource (pointing at the internal Loki).
+      - ./grafana/loki.datasource.docker.yaml:/etc/grafana/provisioning/datasources/loki.yaml:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in backend/.env}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - obs-net
+
+  observe-write-proxy:
+    build: ../observe-write-proxy
+    restart: unless-stopped
+    ports:
+      - "4318:4318"    # Bearer-authenticated OTLP writes from SDKs
+    environment:
+      LOKI_URL: http://loki:3100
+      GRAFANA_URL: http://grafana:3000   # internal port — not the 3030 host mapping
+      DB_PATH: /data/proxy.db
+    volumes:
+      - proxy-data:/data
+    depends_on:
+      loki:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+    networks:
+      - obs-net
+
+volumes:
+  loki-data:
+  grafana-data:
+  proxy-data:
+
+networks:
+  obs-net:

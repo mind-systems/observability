@@ -63,6 +63,7 @@ observe-swift/
 observe-dart/
 observe-js/
 observe-contract/
+observe-write-proxy/
 
 # --- AI tooling (reproducible via the skills CLI; not part of the project) ---
 .agents/

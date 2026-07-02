@@ -10,7 +10,7 @@ This root repo is the **coordination layer**. It holds the architecture, roadmap
 
 ## Repository structure
 
-The SDKs are **separate git repositories** (each has its own `.git`) living inside this root as subdirectories, excluded from the root's tracking via `.gitignore`.
+The SDKs — and the `observe-write-proxy` service — are **separate git repositories** (each has its own `.git`) living inside this root as subdirectories, excluded from the root's tracking via `.gitignore`.
 
 | Directory | GitHub | Stack | Purpose |
 |---|---|---|---|
@@ -18,6 +18,7 @@ The SDKs are **separate git repositories** (each has its own `.git`) living insi
 | `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK — separate git repo |
 | `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK — separate git repo |
 | `observe-contract/` | [observe-contract](https://github.com/mind-systems/observe-contract) | Markdown spec + JSON golden fixtures | Frozen cross-platform logging contract — separate git repo; every SDK pins it by git URL at a tag |
+| `observe-write-proxy/` | [observe-write-proxy](https://github.com/mind-systems/observe-write-proxy) | Go (single static binary) | OTLP write-auth proxy guarding the Loki write path — separate git repo; a **deployed service** (native binary / container), **not** an SDK and not pinned by consumers |
 
 **Git operations** (status, diff, commit, branch, push) must be run **inside the respective sub-directory**, not from the root — the root has no visibility into changes inside the SDK repos. Consumers install an SDK by **git URL pinned to a tag**; there is no registry release.
 
@@ -27,6 +28,7 @@ The SDKs are **separate git repositories** (each has its own `.git`) living insi
 - `observe-dart/CLAUDE.md`
 - `observe-js/CLAUDE.md`
 - `observe-contract/CLAUDE.md`
+- `observe-write-proxy/CLAUDE.md`
 
 ## This repo is the coordinator
 
@@ -75,6 +77,7 @@ Isolation across projects is by **resource attributes**: every service sets `pro
 
 - Work scoped to a single SDK → operate **inside** that sub-repo; its plans/roadmaps go to that repo's own `.ai-factory/`.
 - Cross-project, backend, tooling, or architectural work → use the **root** `.ai-factory/`.
+- **SDK code changes never go into the root ROADMAP.** A task that touches `observe-swift`, `observe-dart`, or `observe-js` source belongs in that SDK's own `.ai-factory/ROADMAP.md`. The root ROADMAP covers backend infrastructure and tooling only.
 
 ### `/aif-plan` routing rules
 
