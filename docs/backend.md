@@ -5,13 +5,13 @@ The local observability backend is **Loki 3.x** (log storage and query) plus **G
 ## Running the backend
 
 ```
-make backend-up       # start Loki and Grafana (installs via Homebrew if needed)
-make backend-down     # stop both
+make backend-up       # start Loki, Grafana, and the write proxy (installs/builds first if needed)
+make backend-down     # stop all three
 make backend-status   # show whether processes are running and HTTP endpoints respond
 make backend-verify   # end-to-end test against the frozen contract fixtures
 ```
 
-`backend-up` is idempotent — safe to run if the processes are already running. It auto-installs Loki and Grafana via Homebrew on a machine that doesn't have them yet, so a new machine needs only `make backend-up`.
+`backend-up` is idempotent — safe to run if the processes are already running. It auto-installs Loki and Grafana via Homebrew on a machine that doesn't have them yet. The write proxy is different: it comes from the separate `observe-write-proxy` sibling repo, not Homebrew, so a new machine needs that repo cloned beside this one and a Go toolchain installed before `make backend-up` can build and start it — see `docs/playbooks/environment-setup.md`.
 
 After startup:
 
@@ -20,17 +20,23 @@ After startup:
 | Grafana | http://localhost:3000 (admin / admin) |
 | Loki    | http://localhost:3100 |
 | OTLP ingest | `POST http://localhost:3100/otlp/v1/logs` |
+| Proxy   | http://localhost:4318 — OTLP writes: `POST /v1/logs` (Bearer write-token), admin GUI at `/` |
+
+`make backend-up` builds the proxy binary once, only when it is absent. After pulling proxy source updates, rebuild explicitly before the next `make backend-up` — either `rm observe-write-proxy/bin/proxy` or `make -C observe-write-proxy build`.
+
+A local SDK points at the proxy by setting its OTLP endpoint to `http://localhost:4318/v1/logs` and sending `Authorization: Bearer <token>`, where `<token>` is a write token minted in the proxy's admin GUI (`http://localhost:4318/`). This is the *where* — see `docs/log-destinations.md` for the `LOG_DESTINATION` switch, which is the *whether*.
 
 ## Data storage
 
-Loki and Grafana persist data under `~/.local/share/observe/`:
+Loki, Grafana, and the write proxy persist data under `~/.local/share/observe/`:
 
 | Path | Contents |
 |------|----------|
 | `~/.local/share/observe/loki/` | chunks, TSDB index, WAL, rules |
 | `~/.local/share/observe/grafana/` | Grafana state (dashboards, sessions) |
+| `~/.local/share/observe/proxy.db` | the write proxy's token store (minted write tokens) |
 
-Both directories survive reboots. `make backend-up` creates them automatically on first run. `make backend-down` stops the processes but leaves the data intact. To wipe everything and start fresh, run `make backend-clean`.
+Both directories survive reboots, and so does the proxy's token store. `make backend-up` creates the data directories automatically on first run. `make backend-down` stops the processes but leaves the data intact. `make backend-clean` wipes everything for a fresh start — **including `proxy.db`**, which deletes every minted write token; any SDK pointed at a local token needs a freshly minted one after a clean. `backend-clean` does not stop running processes, so run `make backend-down` first if the proxy is running — deleting its SQLite WAL/SHM files out from under an open connection can corrupt the next checkpoint.
 
 PID files and process logs (`/tmp/obs-loki.pid`, `/tmp/obs-loki.log`, etc.) remain in `/tmp` — they are ephemeral by nature and recreated on each `make backend-up`.
 

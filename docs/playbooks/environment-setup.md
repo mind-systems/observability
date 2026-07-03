@@ -17,7 +17,8 @@ This repo ships **only their run-config** (`backend/loki/`, `backend/grafana/`) 
   - **macOS** → Homebrew (`brew install loki grafana`) — automated below.
   - **Linux** → your distro's package or the Grafana Labs release binaries.
   - **Windows** → `winget`/`scoop` or the Grafana Labs installers/binaries.
-- **Git** (the SDK repos clone alongside the root; the backend itself doesn't need them).
+- **The `observe-write-proxy` sibling repo**, cloned beside this root repo, plus a **Go toolchain** — unlike Loki/Grafana, the proxy is not auto-installed via Homebrew; `make backend-up` builds it from source with `go build` on first run. Without both, `make backend-up` stops with a clear error before starting anything.
+- **Git** (the SDK repos, and the `observe-write-proxy` repo above, clone alongside the root).
 
 ## macOS — one command
 
