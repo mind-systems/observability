@@ -33,13 +33,14 @@ After switching branches everywhere, read CLAUDE.md in the root and in each sub-
 
 ---
 
-## SDK sub-repositories
+## Sub-repositories
 
 | Directory | GitHub | Stack | Purpose |
 |-----------|--------|-------|---------|
 | `observe-swift/` | [observe-swift](https://github.com/mind-systems/observe-swift) | Swift / SwiftPM | Swift OTLP/HTTP logging SDK |
 | `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK |
 | `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK |
+| `observe-write-proxy/` | [observe-write-proxy](https://github.com/mind-systems/observe-write-proxy) | Go (single static binary) | Bearer-authenticated OTLP write proxy in front of Loki |
 
 Each sub-directory is an independent git repository. Run `git` commands from inside the sub-directory, not from the root.
 
@@ -81,26 +82,28 @@ The switch lives in each project's own logger config and is set per service. See
 
 Two projects integrate this from the start — **mind** (mobile, API, web) and **tradeoxy** (broker, core, GUI) — but the SDK is project-agnostic and meant to drop into anything. SDKs target Swift, Node/TypeScript, web JavaScript, and Dart/Flutter.
 
-## Run the backend locally
+## Run the stack locally
 
 ```
 make backend-up
 ```
 
-That single command installs Loki and Grafana via Homebrew (if needed) and starts both as native macOS processes. No Docker.
+That single command installs Loki and Grafana via Homebrew (if needed), builds the write proxy from the `observe-write-proxy` sibling repo (a Go toolchain is required for this one), and starts all three as native macOS processes. No Docker.
 
 | Service | URL | Notes |
 |---------|-----|-------|
 | Grafana | http://localhost:3000 | login: admin / admin |
-| Loki    | http://localhost:3100 | |
-| OTLP log ingest | `POST http://localhost:3100/otlp/v1/logs` | point any SDK here |
+| Loki    | http://localhost:3100 | internal store; SDKs do not write here directly |
+| Write proxy | http://localhost:4318 | SDK log writes go to `POST /v1/logs` with `Authorization: Bearer <token>`; admin GUI at `/` |
+
+A local SDK sends its logs to the proxy at `http://localhost:4318/v1/logs` with a write token minted in the proxy's admin GUI, not to Loki directly. See `docs/backend.md` for the run details and `docs/log-destinations.md` for the `LOG_DESTINATION` switch.
 
 ```
-make backend-down     # stop both
+make backend-down     # stop all three
 make backend-status   # check whether they're running
 make backend-verify   # end-to-end test against the contract fixtures
 ```
 
 ## Status
 
-The backend (Loki + Grafana) is up. The scope right now is **logs only**; the architecture is designed so traces and profiling can be added later without re-platforming. See `CLAUDE.md` for the architecture decisions and `.ai-factory/` for the roadmap, project specification, and per-project integration notes.
+The backend is up: Loki and Grafana, with the write proxy authenticating SDK log writes in front of Loki. The scope right now is **logs only**; the architecture is designed so traces and profiling can be added later without re-platforming. See `CLAUDE.md` for the architecture decisions and `.ai-factory/` for the roadmap, project specification, and per-project integration notes.
