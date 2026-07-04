@@ -64,7 +64,9 @@ fi
 # 5. Label policy
 echo ""
 echo "5. Label set (must be project / service_name / level only)"
-LABELS=$(curl -sS "$LOKI/loki/api/v1/labels")
+LABELS=$(curl -sS -G "$LOKI/loki/api/v1/labels" \
+  --data-urlencode 'start=1700000000000000000' \
+  --data-urlencode "end=${NOW_NS}")
 
 for expected in project service_name level; do
   echo "$LABELS" | grep -q "\"$expected\"" \
