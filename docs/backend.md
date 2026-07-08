@@ -1,6 +1,6 @@
 # Backend: Loki + Grafana
 
-The local observability backend is **Loki 3.x** (log storage and query) plus **Grafana** (UI and dashboards), both running as native macOS processes installed via Homebrew. No Docker. No external services. One command brings the whole thing up from a fresh checkout.
+The local observability backend is **Loki 3.x** (log storage and query) plus **Grafana** (UI and dashboards), both running as native macOS processes installed via Homebrew by default — no Docker required locally, no external services. One command brings the whole thing up from a fresh checkout. A separate Docker Compose stack (`backend/docker-compose.yml`) runs the same components for **server** deployment — additive, not a replacement for the native path.
 
 ## Running the backend
 
@@ -18,13 +18,17 @@ After startup:
 | Service | URL |
 |---------|-----|
 | Grafana | http://localhost:3000 (admin / admin) |
-| Loki    | http://localhost:3100 |
-| OTLP ingest | `POST http://localhost:3100/otlp/v1/logs` |
+| Loki    | http://localhost:3100 — internal; not used directly for writes (proxy) or reads (`observe-logs` goes through Grafana's datasource-proxy API) |
+| OTLP ingest | `POST http://localhost:3100/otlp/v1/logs` — reached only via the write proxy, never called directly by SDKs |
 | Proxy   | http://localhost:4318 — OTLP writes: `POST /v1/logs` (Bearer write-token), admin GUI at `/` |
 
 `make backend-up` builds the proxy binary once, only when it is absent. After pulling proxy source updates, rebuild explicitly before the next `make backend-up` — either `rm observe-write-proxy/bin/proxy` or `make -C observe-write-proxy build`.
 
 A local SDK points at the proxy by setting its OTLP endpoint to `http://localhost:4318/v1/logs` and sending `Authorization: Bearer <token>`, where `<token>` is a write token minted in the proxy's admin GUI (`http://localhost:4318/`). This is the *where* — see `docs/log-destinations.md` for the `LOG_DESTINATION` switch, which is the *whether*.
+
+## Reading logs
+
+There is no direct-Loki read path, locally or remotely. The `observe-logs` skill queries Loki exclusively through **Grafana's datasource-proxy API** (`/api/datasources/proxy/uid/<uid>/loki/api/v1/...`), resolved per environment from a registry the skill owns — never `http://localhost:3100` directly. This applies even to the local backend: register a `local` environment pointing at Grafana's own Loki datasource (`backend/grafana/provisioning/datasources/loki.yaml`) rather than Loki's port directly.
 
 ## Data storage
 

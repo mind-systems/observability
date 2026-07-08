@@ -1,6 +1,6 @@
 # observability
 
-A local, no-Docker observability stack and a thin multi-platform SDK that gives every project one shared place to send its logs.
+A native-by-default observability stack and a thin multi-platform SDK that gives every project one shared place to send its logs. Local dev runs without Docker; a server/cloud deployment (Docker) already exists as an additive layer.
 
 This repository is the coordination layer. It holds the architecture, roadmap, and AI context; each platform SDK lives in its own git repository cloned inside this directory.
 
@@ -61,7 +61,7 @@ Every service keeps its own curated logger and ships those same log lines over O
 
 The integration is transport-only. A project does not rewrite the places where it logs — it changes only where the log output goes, at the single point in its code where output is produced, and adds a one-time initialization at startup. The correlation id is attached automatically from ambient context, so individual log statements never have to be touched.
 
-The single contract between a project and the backend is OTLP. Everything behind that contract — where logs are stored, how they're queried, the UI — is off-the-shelf and replaceable. The backend is the Grafana family (Loki for logs), run as native macOS processes. This keeps the door open to add traces, profiling, and a cloud deployment later over the same wire, without changing any project's code.
+The single contract between a project and the backend is OTLP. Everything behind that contract — where logs are stored, how they're queried, the UI — is off-the-shelf and replaceable. The backend is the Grafana family (Loki for logs), run natively for local dev and as a Docker Compose stack for server deployment. This keeps the door open to add traces and profiling later over the same wire, without changing any project's code.
 
 ## Log destinations
 
@@ -75,8 +75,8 @@ The switch lives in each project's own logger config and is set per service. See
 
 ## Constraints
 
-- **No Docker.** Every component runs natively. Anything that requires Docker on macOS is disqualified.
-- **Native macOS.** The backend runs as Homebrew processes.
+- **No Docker required locally.** The local backend runs natively; a component that only ran via Docker on macOS with no native option was disqualified. Running Docker locally instead is the developer's own choice, not a ban.
+- **Native macOS by default.** The local backend runs as Homebrew binaries, backgrounded via `make backend-up`. The server/cloud deployment runs the same components as containers (`backend/docker-compose.yml`) — additive, not a replacement.
 
 ## Consumers
 
@@ -93,7 +93,7 @@ That single command installs Loki and Grafana via Homebrew (if needed), builds t
 | Service | URL | Notes |
 |---------|-----|-------|
 | Grafana | http://localhost:3000 | login: admin / admin |
-| Loki    | http://localhost:3100 | internal store; SDKs do not write here directly |
+| Loki    | http://localhost:3100 | internal store; SDKs never write here directly, and reads (`observe-logs`) go through Grafana's datasource-proxy API, not this URL |
 | Write proxy | http://localhost:4318 | SDK log writes go to `POST /v1/logs` with `Authorization: Bearer <token>`; admin GUI at `/` |
 
 A local SDK sends its logs to the proxy at `http://localhost:4318/v1/logs` with a write token minted in the proxy's admin GUI, not to Loki directly. See `docs/backend.md` for the run details and `docs/log-destinations.md` for the `LOG_DESTINATION` switch.

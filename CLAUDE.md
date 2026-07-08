@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A **local, no-Docker observability stack + a thin multi-platform SDK** for debugging across projects. It replaces per-service file logging (each service writes its own files, manually merged by timestamp) with one place where structured logs — and later traces and profiles — are correlated automatically by `trace_id`.
+A **native-by-default observability stack + a thin multi-platform SDK** for debugging across projects. It replaces per-service file logging (each service writes its own files, manually merged by timestamp) with one place where structured logs — and later traces and profiles — are correlated automatically by `trace_id`.
 
-This root repo is the **coordination layer**. It holds the architecture, roadmap, AI context, and the local backend run-config and tooling. The platform SDKs each live in their own git repository cloned inside this directory. The SDK is the integration surface: drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one — **tradeoxy** and **mind** (both under `~/projects`) — but the SDK is project-agnostic. Local only for now; cloud is a planned later step.
+This root repo is the **coordination layer**. It holds the architecture, roadmap, AI context, and the local backend run-config and tooling. The platform SDKs each live in their own git repository cloned inside this directory. The SDK is the integration surface: drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one — **tradeoxy** and **mind** (both under `~/projects`) — but the SDK is project-agnostic. Local dev runs native, no Docker required; a server/cloud deployment (Docker) already exists as an additive layer — see `backend/docker-compose.yml`.
 
 ## Repository structure
 
@@ -34,14 +34,14 @@ The SDKs — and the `observe-write-proxy` service — are **separate git reposi
 
 The root holds cross-project plans, roadmaps, and AI context (`.ai-factory/`), shared skills (`.claude/`), and two **local-only** pieces that are not shipped to consumers:
 
-- `backend/` — run config for the off-the-shelf engine: Loki config (OTLP log ingestion, low-cardinality labels, local-FS storage), Grafana provisioning (Loki datasource, dashboards), and `docker-compose.yml` — the cross-service wiring for the **server** deployment (Loki + Grafana + `observe-write-proxy`). Locally everything runs native (Homebrew binaries / `brew services`); the compose file is server-only. No engine code.
+- `backend/` — run config for the off-the-shelf engine: Loki config (OTLP log ingestion, low-cardinality labels, local-FS storage), Grafana provisioning (Loki datasource, dashboards), and `docker-compose.yml` — the cross-service wiring for the **server** deployment (Loki + Grafana + `observe-write-proxy`). Locally the default is native (Homebrew binaries, run as background processes via `make backend-up`) — Docker is not required locally, but it's the developer's own choice, not a ban; the compose file targets the server and is not meant to run on the dev machine. No engine code.
 
-The developer browses and selects log lines in Grafana; Claude pulls slices through the **`observe-logs` skill**, which queries the Loki HTTP API (LogQL) directly for the common debug slices: since-last-restart, by `trace_id`, by level/project/time window.
+The developer browses and selects log lines in Grafana; Claude pulls slices through the **`observe-logs` skill**, which queries Loki through **Grafana's datasource-proxy API** (LogQL) — never Loki directly — for the common debug slices: since-last-restart, by `trace_id`, by level/project/time window.
 
 ## Hard constraints
 
-- **No Docker.** Docker is not acceptable on the target machine — it must not be required. Anything that only runs via Docker on macOS is disqualified (this is why SigNoz was rejected).
-- **Native on macOS.** Backend components must run as native processes (Homebrew binaries / `brew services`).
+- **No Docker required locally.** The local backend must have a native path that doesn't need Docker (this is why SigNoz was rejected — Docker-only, no native option). Locally, running Docker instead is the developer's own choice, not disqualifying.
+- **Native on macOS by default.** The local backend runs as native processes (Homebrew binaries), started as background processes via `make backend-up`. The server/cloud deployment runs the same components as containers (`backend/docker-compose.yml`) — additive, not a replacement for the native path.
 
 ## Backend decision: don't build the engine
 
@@ -118,7 +118,7 @@ All files — docs, plans, config, generated files — are written in **English*
 
 ## Read this first — start here, then your playbook
 
-- **Fresh machine — set up the backend?** Read **`docs/playbooks/environment-setup.md`** — Loki + Grafana as native processes (no Docker): one command on macOS (`make backend-up`), the same two binaries run by hand on Linux/Windows.
+- **Fresh machine — set up the backend?** Read **`docs/playbooks/environment-setup.md`** — Loki + Grafana as native processes (no Docker required locally): one command on macOS (`make backend-up`), the same binaries run by hand on Linux/Windows. A separate, already-shipped Docker path exists for server/cloud deployment (`backend/docker-compose.yml`) — not for the dev machine.
 - **Integrating an `observe-*` SDK into a consuming project?** Read **`docs/playbooks/sdk-integration.md`** — the distilled playbook from the first three integrations (mind_mobile, mind_api, mind_web): the non-negotiable principles (transport swap only, zero new log lines, zero call-site changes), the generic **Phase 1 (sink swap) / Phase 2 (trace correlation)** task sequence, and the platform gotchas. Each project's specific scope lives in its `.ai-factory/notes/0N-integrate-*.md`.
 - **Implementing a new platform SDK (a new `observe-*` target, e.g. Python)?** Read **`docs/playbooks/sdk-authoring.md`** — the cross-platform invariants, the generic Foundation→Core→Adapters→Verification task sequence, and the watch-points distilled from the existing SDKs. The frozen contract (`observe-contract`) and the reference SDK (`observe-js`) are its anchors.
 
@@ -126,4 +126,4 @@ Both are the cross-cutting how-and-why that each effort otherwise rediscovers th
 
 ## Status
 
-The backend (Loki + Grafana) is up and verified. The SDKs are built and integrated into the first consumers (see the playbooks). The scope right now is **logs only**.
+The backend (Loki + Grafana) is up and verified, natively for local dev and as a Docker Compose stack for server deployment (`backend/docker-compose.yml`). The SDKs are built and integrated into the first consumers (see the playbooks). The scope right now is **logs only**. Reads (the `observe-logs` skill) go through Grafana's datasource-proxy API, not directly against Loki.

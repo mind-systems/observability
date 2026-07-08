@@ -1,6 +1,6 @@
 # Environment setup
 
-> Bring the local observability backend (Loki + Grafana) up on a fresh machine. The backend is **off-the-shelf and native — no Docker**. macOS has a one-command path; other OSes run the same two binaries with the repo's config by hand.
+> Bring the local observability backend (Loki + Grafana) up on a fresh machine. The backend is **off-the-shelf**, running natively by default — no Docker required locally, though it's the developer's own choice if preferred. macOS has a one-command path (`make backend-up`, which runs everything as background processes); other OSes run the same binaries with the repo's config by hand. A separate Docker Compose stack (`backend/docker-compose.yml`) targets **server** deployment only — it is not meant to run on the dev machine.
 
 ## What you're setting up
 
@@ -13,7 +13,7 @@ This repo ships **only their run-config** (`backend/loki/`, `backend/grafana/`) 
 
 ## Prerequisites
 
-- **Loki ≥ 3.0** (native OTLP ingestion landed in 3.0 — earlier versions won't accept `/otlp/v1/logs`) and **Grafana**, installed natively for your OS. No Docker.
+- **Loki ≥ 3.0** (native OTLP ingestion landed in 3.0 — earlier versions won't accept `/otlp/v1/logs`) and **Grafana**, installed natively for your OS. No Docker required — that's the default local path.
   - **macOS** → Homebrew (`brew install loki grafana`) — automated below.
   - **Linux** → your distro's package or the Grafana Labs release binaries.
   - **Windows** → `winget`/`scoop` or the Grafana Labs installers/binaries.
@@ -57,14 +57,14 @@ On Windows, `make`/`brew` aren't available — run those two commands directly (
 | Service | URL |
 |---|---|
 | Grafana | `http://localhost:3000` (login `admin` / `admin`) |
-| Loki | `http://localhost:3100` |
-| OTLP log ingest | `POST http://localhost:3100/otlp/v1/logs` |
+| Loki | `http://localhost:3100` — internal; SDKs never write here directly (proxy) and `observe-logs` never reads here directly (Grafana datasource-proxy) |
+| OTLP log ingest | `POST http://localhost:3100/otlp/v1/logs` — reached only through the write proxy |
 
 ## Verify
 
 - macOS: `make backend-verify`.
 - Any OS with `bash` + `curl`: run `backend/verify.sh` — it posts the frozen contract golden fixtures, queries them back via LogQL, and asserts the label set is exactly `project` / `service_name` / `level`.
-- Or read logs interactively with the `observe-logs` skill.
+- Or read logs interactively with the `observe-logs` skill, which queries through Grafana's datasource-proxy API (register a `local` environment pointing at the local Grafana's Loki datasource — see `docs/backend.md`).
 
 ## Pointing a project at the backend
 
@@ -74,6 +74,6 @@ A consuming project sets its `LOG_DESTINATION` (`file` / `grafana` / `both`) and
 
 Data persists under `${HOME}/.local/share/observe/{loki,grafana}` and survives reboots. `make backend-down` stops the processes but keeps the data; `make backend-clean` wipes it for a fresh start (on other OSes, delete those directories). Deeper operational notes and the configuration rationale (label policy, the 3.x query-sharding fix, WAL/disk, historical-data handling) live in `docs/backend.md`.
 
-## Why native, no Docker
+## Why native by default, no Docker required
 
-A project constraint: Docker is not acceptable on the target machine, so the backend runs as native processes. Loki and Grafana are off-the-shelf and cross-platform, so this works natively on Linux and Windows as well — only the install and launch mechanics differ from the macOS `make` path; the run-config is the same everywhere.
+The local dev machine must have a Docker-free path — Loki and Grafana are off-the-shelf and cross-platform, so running them as native processes works on Linux and Windows as well as macOS; only the install and launch mechanics differ from the macOS `make` path, the run-config is the same everywhere. This is a default, not a ban: running Docker locally instead is the developer's own choice. Separately, the server/cloud deployment (`backend/docker-compose.yml`) runs the same components as containers deliberately — that's a different concern (a shared, reachable deployment) from the local dev-machine default.

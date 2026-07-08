@@ -1,6 +1,6 @@
 # Project Roadmap
 
-> A local, no-Docker observability stack plus a thin multi-platform SDK that ships each project's custom logs over OTLP to a native Grafana backend — correlated by `trace_id`.
+> A native-by-default observability stack (server/cloud deployment also runs via Docker) plus a thin multi-platform SDK that ships each project's custom logs over OTLP to a Grafana backend — correlated by `trace_id`.
 
 ## Milestones
 
