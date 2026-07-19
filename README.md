@@ -19,11 +19,12 @@ Run these commands in order:
 3. git clone https://github.com/mind-systems/observe-swift.git observe-swift
 4. git clone https://github.com/mind-systems/observe-dart.git observe-dart
 5. git clone https://github.com/mind-systems/observe-js.git observe-js
-6. git clone https://github.com/mind-systems/observe-write-proxy.git observe-write-proxy
+6. git clone https://github.com/mind-systems/observe-contract.git observe-contract
+7. git clone https://github.com/mind-systems/observe-write-proxy.git observe-write-proxy
 
 Directory names must be preserved exactly — the root coordination layer references the SDKs by these paths.
 
-After cloning, for each repository (root, observe-swift, observe-dart, observe-js, observe-write-proxy) find the most recently committed branch and switch to it:
+After cloning, for each repository (root, observe-swift, observe-dart, observe-js, observe-contract, observe-write-proxy) find the most recently committed branch and switch to it:
 - Run `git branch -r --sort=-committerdate` to list remote branches by recency
 - Check out the top result (skip HEAD and main/master if a feature branch is more recent)
 - If the most recent branch is already main/master, stay on it
@@ -40,6 +41,7 @@ After switching branches everywhere, read CLAUDE.md in the root and in each sub-
 | `observe-swift/` | [observe-swift](https://github.com/mind-systems/observe-swift) | Swift / SwiftPM | Swift OTLP/HTTP logging SDK |
 | `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK |
 | `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK |
+| `observe-contract/` | [observe-contract](https://github.com/mind-systems/observe-contract) | Markdown spec + JSON golden fixtures | Frozen cross-platform logging contract, pinned (or inlined) by every SDK |
 | `observe-write-proxy/` | [observe-write-proxy](https://github.com/mind-systems/observe-write-proxy) | Go (single static binary) | Bearer-authenticated OTLP write proxy in front of Loki |
 
 Each sub-directory is an independent git repository. Run `git` commands from inside the sub-directory, not from the root.

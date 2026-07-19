@@ -1,12 +1,8 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## What this is
 
 A **native-by-default observability stack + a thin multi-platform SDK** for debugging across projects. It replaces per-service file logging (each service writes its own files, manually merged by timestamp) with one place where structured logs — and later traces and profiles — are correlated automatically by `trace_id`.
 
-This root repo is the **coordination layer**. It holds the architecture, roadmap, AI context, and the local backend run-config and tooling. The platform SDKs each live in their own git repository cloned inside this directory. The SDK is the integration surface: drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one — **tradeoxy** and **mind** (both under `~/projects`) — but the SDK is project-agnostic. Local dev runs native, no Docker required; a server/cloud deployment (Docker) already exists as an additive layer — see `backend/docker-compose.yml`.
+The platform SDKs each live in their own git repository cloned inside this directory. The SDK is the integration surface: drop it into any project on any supported platform and only the existing logger's transport changes. Two consumers from day one — **tradeoxy** and **mind** (both under `~/projects`) — but the SDK is project-agnostic. Local dev runs native, no Docker required; a server/cloud deployment (Docker) already exists as an additive layer — see `backend/docker-compose.yml`.
 
 ## Repository structure
 
@@ -17,7 +13,7 @@ The SDKs — and the `observe-write-proxy` service — are **separate git reposi
 | `observe-swift/` | [observe-swift](https://github.com/mind-systems/observe-swift) | Swift / SwiftPM | Swift OTLP/HTTP logging SDK — separate git repo |
 | `observe-dart/` | [observe-dart](https://github.com/mind-systems/observe-dart) | Dart / Flutter | Dart OTLP/HTTP logging SDK — separate git repo |
 | `observe-js/` | [observe-js](https://github.com/mind-systems/observe-js) | TypeScript (isomorphic Node + browser) | JS/TS OTLP/HTTP logging SDK — separate git repo |
-| `observe-contract/` | [observe-contract](https://github.com/mind-systems/observe-contract) | Markdown spec + JSON golden fixtures | Frozen cross-platform logging contract — separate git repo; every SDK pins it by git URL at a tag |
+| `observe-contract/` | [observe-contract](https://github.com/mind-systems/observe-contract) | Markdown spec + JSON golden fixtures | Frozen cross-platform logging contract — separate git repo; `observe-swift`/`observe-dart` pin it as a git submodule at a tag, `observe-js` content-inlines the fixture files instead (not pinned by git URL) |
 | `observe-write-proxy/` | [observe-write-proxy](https://github.com/mind-systems/observe-write-proxy) | Go (single static binary) | OTLP write-auth proxy guarding the Loki write path — separate git repo; a **deployed service** (native binary / container), **not** an SDK and not pinned by consumers |
 
 **Git operations** (status, diff, commit, branch, push) must be run **inside the respective sub-directory**, not from the root — the root has no visibility into changes inside the SDK repos. Consumers install an SDK by **git URL pinned to a tag**; there is no registry release.
